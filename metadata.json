@@ -1,0 +1,6 @@
+{
+  "name": "Google Messages with Privacy Shield & RCS",
+  "description": "Android SMS & RCS messaging with Dark Material You design, zero-leak phone number masking with randomly generated aliases for unsaved senders, and end-to-end encryption.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
