@@ -11,6 +11,7 @@ export interface Contact {
   privacyAlias: string; // Randomly generated or deterministic privacy name (e.g. "Cobalt Falcon")
   privacyTheme: string; // e.g. "Mineral · Fauna"
   avatarColor: string; // Material You palette tone
+  avatarPatternIndex?: number; // 0 to 7: randomly selected contact image pattern from reference sheet for unsaved contacts
   isRcsEnabled: boolean;
   encryptionStatus: EncryptionStatus;
   safetyNumber: string; // 60-digit verification code

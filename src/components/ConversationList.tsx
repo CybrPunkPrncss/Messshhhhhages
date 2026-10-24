@@ -1,11 +1,13 @@
 import { Conversation } from '../types';
-import { getContactDisplayName, getAvatarInitials } from '../utils/privacyPseudonyms';
+import { getContactDisplayName } from '../utils/privacyPseudonyms';
 import { formatShortDate } from '../utils/crypto';
-import { Lock, ShieldCheck, Pin, CheckCheck, MessageSquarePlus, Archive, Check } from 'lucide-react';
+import { ContactAvatar } from './ContactAvatar';
+import { Lock, ShieldCheck, Pin, CheckCheck, MessageSquarePlus, Check } from 'lucide-react';
 
 interface ConversationListProps {
   conversations: Conversation[];
   selectedId: string | null;
+  readReceiptsEnabled?: boolean;
   onSelectConversation: (id: string) => void;
   onStartNewChat: () => void;
   onTogglePin?: (id: string) => void;
@@ -16,6 +18,7 @@ interface ConversationListProps {
 export function ConversationList({
   conversations,
   selectedId,
+  readReceiptsEnabled = true,
   onSelectConversation,
   onStartNewChat,
   onTogglePin,
@@ -51,7 +54,6 @@ export function ConversationList({
           const isPinned = contact.isPinned;
           const isSelected = selectedId === conv.id;
           const displayName = getContactDisplayName(contact);
-          const initials = getAvatarInitials(displayName);
           const isUnsaved = !contact.isSaved;
 
           return (
@@ -64,32 +66,8 @@ export function ConversationList({
                   : 'hover:bg-neutral-800/50 active:bg-neutral-800'
               }`}
             >
-              {/* Avatar circle */}
-              <div className="relative shrink-0">
-                <div
-                  className="w-12 h-12 rounded-full flex items-center justify-center text-neutral-900 font-bold text-sm shadow-sm"
-                  style={{ backgroundColor: contact.avatarColor || '#a8c7fa' }}
-                >
-                  {initials}
-                </div>
-
-                {/* Privacy Shield Badge for unsaved senders */}
-                {isUnsaved ? (
-                  <span
-                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center text-emerald-400 shadow"
-                    title="Unsaved Contact: Phone number is hidden on screen and shielded as privacy alias"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                  </span>
-                ) : (
-                  <span
-                    className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center text-sky-400 shadow"
-                    title="End-to-End Encrypted Contact"
-                  >
-                    <Lock className="w-2.5 h-2.5" />
-                  </span>
-                )}
-              </div>
+              {/* Avatar circle (Custom mandala image for unsaved, initials for saved) */}
+              <ContactAvatar contact={contact} size="lg" showBadge={true} />
 
               {/* Conversation info */}
               <div className="flex-1 min-w-0">
@@ -130,8 +108,14 @@ export function ConversationList({
                       <span className="w-5 h-5 rounded-full bg-sky-400 text-neutral-950 font-bold text-[10px] flex items-center justify-center">
                         {unreadCount}
                       </span>
+                    ) : readReceiptsEnabled ? (
+                      <span title="Read" className="flex items-center">
+                        <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
+                      </span>
                     ) : (
-                      <CheckCheck className="w-3.5 h-3.5 text-sky-400" />
+                      <span title="Delivered (Read receipts disabled)" className="flex items-center">
+                        <CheckCheck className="w-3.5 h-3.5 text-neutral-400" />
+                      </span>
                     )}
                   </div>
                 </div>

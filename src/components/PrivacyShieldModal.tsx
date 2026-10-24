@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Contact } from '../types';
 import { generatePrivacyPseudonym, getAvatarColor, getContactDisplayName, getSecureAuditMask } from '../utils/privacyPseudonyms';
+import { ContactAvatar, getRandomPatternIndex, REFERENCE_IMAGE_PATH } from './ContactAvatar';
 import { ShieldCheck, Lock, EyeOff, X, Sparkles, Check, ShieldAlert } from 'lucide-react';
 
 interface PrivacyShieldModalProps {
@@ -11,11 +12,24 @@ interface PrivacyShieldModalProps {
 export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldModalProps) {
   const [testNumber, setTestNumber] = useState('+1 (555) 982-4102');
   const [testGeneratedAlias, setTestGeneratedAlias] = useState(() => generatePrivacyPseudonym('+15559824102'));
+  const [testPatternIndex, setTestPatternIndex] = useState(() => getRandomPatternIndex('+15559824102'));
 
   const handleTestNumberChange = (val: string) => {
     setTestNumber(val);
     const cleaned = val.replace(/\D/g, '');
     setTestGeneratedAlias(generatePrivacyPseudonym(cleaned || 'seed'));
+    setTestPatternIndex(getRandomPatternIndex(cleaned || 'seed'));
+  };
+
+  const PATTERN_POSITIONS: Record<number, string> = {
+    0: '0% 0%',
+    1: '33.333% 0%',
+    2: '66.666% 0%',
+    3: '100% 0%',
+    4: '0% 100%',
+    5: '33.333% 100%',
+    6: '66.666% 100%',
+    7: '100% 100%',
   };
 
   return (
@@ -47,7 +61,7 @@ export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldM
             <div className="space-y-1">
               <h4 className="text-xs font-semibold text-neutral-100">Zero-Screen Exposure Policy</h4>
               <p className="text-xs text-neutral-300 leading-relaxed">
-                When you receive SMS or RCS text messages from unsaved phone numbers, this app never renders their raw phone numbers on your screen. Instead, the Privacy Engine dynamically assigns a noble, memorable pseudonym.
+                When you receive SMS or RCS text messages from unsaved phone numbers, this app never renders their raw phone numbers on your screen. Instead, the Privacy Engine dynamically assigns a noble pseudonym and a unique psychedelic contact image.
               </p>
             </div>
           </div>
@@ -55,7 +69,7 @@ export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldM
           <div className="grid grid-cols-2 gap-2 pt-2 border-t border-neutral-800/80 text-[11px]">
             <div className="p-2 rounded-xl bg-neutral-900/80 border border-neutral-800">
               <div className="text-neutral-400">Screen Render Target:</div>
-              <div className="text-emerald-400 font-medium">Privacy Alias Only</div>
+              <div className="text-emerald-400 font-medium">Privacy Alias + Mandala Image</div>
             </div>
             <div className="p-2 rounded-xl bg-neutral-900/80 border border-neutral-800">
               <div className="text-neutral-400">Carrier Number Store:</div>
@@ -89,21 +103,31 @@ export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldM
 
           <div className="p-3 rounded-xl bg-neutral-900 border border-emerald-900/60 flex items-center justify-between">
             <div className="flex items-center gap-3">
+              {/* Contact image from reference sheet with black background */}
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-950 font-bold text-xs"
-                style={{ backgroundColor: getAvatarColor(testNumber) }}
+                className="w-11 h-11 rounded-full overflow-hidden bg-black shadow-sm ring-1 ring-neutral-800 shrink-0"
+                title={`Pattern #${testPatternIndex + 1}`}
               >
-                {testGeneratedAlias.slice(0, 2).toUpperCase()}
+                <div
+                  className="w-full h-full rounded-full"
+                  style={{
+                    backgroundImage: `url('${REFERENCE_IMAGE_PATH}')`,
+                    backgroundSize: '400% 200%',
+                    backgroundPosition: PATTERN_POSITIONS[testPatternIndex] || '0% 0%',
+                    backgroundRepeat: 'no-repeat',
+                  }}
+                />
               </div>
+
               <div>
                 <div className="text-xs font-semibold text-neutral-100 flex items-center gap-1.5">
                   <span>{testGeneratedAlias}</span>
                   <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.2 rounded border border-emerald-800/80">
-                    Shielded
+                    Pattern #{testPatternIndex + 1}
                   </span>
                 </div>
                 <div className="text-[10px] text-neutral-400 font-mono">
-                  DOM Output: &quot;{testGeneratedAlias}&quot; · Number on Screen: 0 digits
+                  DOM Output: &quot;{testGeneratedAlias}&quot; · Phone digits visible: 0
                 </div>
               </div>
             </div>
@@ -111,9 +135,10 @@ export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldM
             <button
               onClick={() => {
                 setTestGeneratedAlias(generatePrivacyPseudonym());
+                setTestPatternIndex((prev) => (prev + 1) % 8);
               }}
               className="p-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-700 text-neutral-300 text-[11px]"
-              title="Re-roll random alias"
+              title="Re-roll random alias & image"
             >
               Re-roll
             </button>
@@ -134,12 +159,7 @@ export function PrivacyShieldModal({ onClose, shieldedContacts }: PrivacyShieldM
                 className="flex items-center justify-between px-3 py-2 rounded-xl bg-neutral-950 border border-neutral-800/80 text-xs"
               >
                 <div className="flex items-center gap-2.5">
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-950 font-bold text-[10px]"
-                    style={{ backgroundColor: contact.avatarColor }}
-                  >
-                    {contact.privacyAlias.slice(0, 2).toUpperCase()}
-                  </div>
+                  <ContactAvatar contact={contact} size="sm" showBadge={false} />
                   <div>
                     <div className="font-medium text-neutral-200">{contact.privacyAlias}</div>
                     <div className="text-[10px] text-neutral-400 font-mono">

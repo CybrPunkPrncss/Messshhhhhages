@@ -3,11 +3,11 @@ import { X, ShieldCheck, Lock, CheckCircle2, Sliders, Smartphone, Radio, Info } 
 
 interface SettingsModalProps {
   onClose: () => void;
+  readReceiptsEnabled: boolean;
+  onToggleReadReceipts: (enabled: boolean) => void;
 }
 
-export function SettingsModal({ onClose }: SettingsModalProps) {
-  const [rcsEnabled, setRcsEnabled] = useState(true);
-  const [readReceipts, setReadReceipts] = useState(true);
+export function SettingsModal({ onClose, readReceiptsEnabled, onToggleReadReceipts }: SettingsModalProps) {
   const [typingIndicators, setTypingIndicators] = useState(true);
   const [keyAlerts, setKeyAlerts] = useState(true);
 
@@ -49,17 +49,49 @@ export function SettingsModal({ onClose }: SettingsModalProps) {
             Send messages over Wi-Fi and mobile data with high-res media, typing indicators, read receipts, and automatic End-to-End Encryption.
           </p>
 
-          <div className="pt-2 border-t border-neutral-800/80 space-y-2 text-xs">
-            <div className="flex items-center justify-between">
-              <span className="text-neutral-300">Send read receipts</span>
-              <input
-                type="checkbox"
-                checked={readReceipts}
-                onChange={(e) => setReadReceipts(e.target.checked)}
-                className="w-4 h-4 accent-sky-400 rounded cursor-pointer"
-              />
+          <div className="pt-2 border-t border-neutral-800/80 space-y-3 text-xs">
+            {/* Read Receipts Toggle */}
+            <div className="p-2.5 rounded-xl bg-neutral-900/90 border border-neutral-800 flex items-start justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-neutral-200 font-medium">Send read receipts</span>
+                  <span
+                    className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                      readReceiptsEnabled
+                        ? 'bg-sky-950 text-sky-400 border border-sky-800'
+                        : 'bg-neutral-800 text-neutral-400'
+                    }`}
+                  >
+                    {readReceiptsEnabled ? 'Active' : 'Disabled'}
+                  </span>
+                </div>
+                <p className="text-[10px] text-neutral-400 leading-normal">
+                  {readReceiptsEnabled
+                    ? 'Others can see when you have read their messages (blue checkmark), and you can see when they read yours.'
+                    : 'Messages stop at "Delivered" status. Neither you nor contacts will see "Read" indicators.'}
+                </p>
+              </div>
+
+              {/* Material You Style Toggle Switch */}
+              <button
+                type="button"
+                role="switch"
+                aria-checked={readReceiptsEnabled}
+                onClick={() => onToggleReadReceipts(!readReceiptsEnabled)}
+                className={`w-11 h-6 rounded-full transition-colors relative shrink-0 p-0.5 cursor-pointer ${
+                  readReceiptsEnabled ? 'bg-sky-400' : 'bg-neutral-700'
+                }`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-neutral-950 transition-transform ${
+                    readReceiptsEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
             </div>
-            <div className="flex items-center justify-between">
+
+            {/* Typing Indicators Toggle */}
+            <div className="flex items-center justify-between px-1">
               <span className="text-neutral-300">Show typing indicators</span>
               <input
                 type="checkbox"

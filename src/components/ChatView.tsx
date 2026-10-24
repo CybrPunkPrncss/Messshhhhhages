@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { Conversation, Message } from '../types';
-import { getContactDisplayName, getAvatarInitials } from '../utils/privacyPseudonyms';
+import { getContactDisplayName } from '../utils/privacyPseudonyms';
 import { formatMessageTime } from '../utils/crypto';
+import { ContactAvatar } from './ContactAvatar';
 import {
   ArrowLeft,
   Phone,
@@ -25,6 +26,7 @@ import {
 
 interface ChatViewProps {
   conversation: Conversation;
+  readReceiptsEnabled?: boolean;
   onBack: () => void;
   onSendMessage: (text: string) => void;
   onAddReaction: (messageId: string, emoji: string) => void;
@@ -38,6 +40,7 @@ const COMMON_EMOJIS = ['❤️', '👍', '😂', '😮', '😢', '🙏', '🔥',
 
 export function ChatView({
   conversation,
+  readReceiptsEnabled = true,
   onBack,
   onSendMessage,
   onAddReaction,
@@ -48,7 +51,6 @@ export function ChatView({
 }: ChatViewProps) {
   const { contact, messages } = conversation;
   const displayName = getContactDisplayName(contact);
-  const initials = getAvatarInitials(displayName);
   const isUnsaved = !contact.isSaved;
 
   const [inputText, setInputText] = useState('');
@@ -101,14 +103,13 @@ export function ChatView({
             <ArrowLeft className="w-5 h-5" />
           </button>
 
-          {/* Contact Avatar */}
+          {/* Contact Avatar (Displays random tie-dye pattern for unsaved contacts) */}
           <div
             onClick={onOpenPrivacyModal}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-950 font-bold text-xs shrink-0 cursor-pointer shadow-sm"
-            style={{ backgroundColor: contact.avatarColor || '#a8c7fa' }}
+            className="cursor-pointer"
             title={isUnsaved ? 'Unsaved Contact · Protected by Privacy Shield' : 'Saved Contact'}
           >
-            {initials}
+            <ContactAvatar contact={contact} size="md" showBadge={false} />
           </div>
 
           {/* Name & Security Subtitle */}
@@ -314,12 +315,21 @@ export function ChatView({
                     <span>{message.timeFormatted}</span>
                     {isUser && (
                       <span className="shrink-0">
-                        {message.status === 'read' ? (
-                          <CheckCheck className="w-3 h-3 text-sky-200" />
-                        ) : message.status === 'delivered' ? (
-                          <CheckCheck className="w-3 h-3 text-sky-300/70" />
+                        {readReceiptsEnabled && message.status === 'read' ? (
+                          <span title="Read" className="flex items-center">
+                            <CheckCheck className="w-3 h-3 text-sky-200" />
+                          </span>
+                        ) : message.status === 'read' || message.status === 'delivered' ? (
+                          <span
+                            title={readReceiptsEnabled ? 'Delivered' : 'Delivered (Read receipts disabled)'}
+                            className="flex items-center"
+                          >
+                            <CheckCheck className={`w-3 h-3 ${readReceiptsEnabled ? 'text-sky-300/70' : 'text-slate-300/70'}`} />
+                          </span>
                         ) : (
-                          <Check className="w-3 h-3 text-sky-300/60" />
+                          <span title="Sent" className="flex items-center">
+                            <Check className="w-3 h-3 text-sky-300/60" />
+                          </span>
                         )}
                       </span>
                     )}
@@ -469,12 +479,7 @@ export function ChatView({
         <div className="fixed inset-0 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
           <div className="w-full max-w-sm bg-neutral-900 border border-neutral-700 rounded-3xl p-5 space-y-4 shadow-2xl">
             <div className="flex items-center gap-2.5">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-950 font-bold text-xs"
-                style={{ backgroundColor: contact.avatarColor }}
-              >
-                {initials}
-              </div>
+              <ContactAvatar contact={contact} size="md" />
               <div>
                 <h3 className="font-semibold text-neutral-100 text-sm">Save Contact</h3>
                 <p className="text-[11px] text-neutral-400">Current Alias: {contact.privacyAlias}</p>

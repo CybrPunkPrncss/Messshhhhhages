@@ -1,6 +1,7 @@
 import { ShieldCheck, MessageSquare, X } from 'lucide-react';
 import { Contact } from '../types';
 import { getContactDisplayName } from '../utils/privacyPseudonyms';
+import { ContactAvatar } from './ContactAvatar';
 
 interface AndroidNotificationBannerProps {
   contact: Contact;
@@ -24,20 +25,8 @@ export function AndroidNotificationBanner({
         onClick={onOpen}
         className="w-full p-3.5 bg-neutral-900/95 backdrop-blur-lg border border-neutral-700/80 rounded-3xl shadow-2xl cursor-pointer hover:border-sky-500/60 transition-all flex items-start gap-3"
       >
-        {/* Contact avatar with shield */}
-        <div className="relative shrink-0 mt-0.5">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-neutral-950 font-bold text-xs shadow-sm"
-            style={{ backgroundColor: contact.avatarColor }}
-          >
-            {displayName.slice(0, 2).toUpperCase()}
-          </div>
-          {isUnsaved && (
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-neutral-900 border border-neutral-700 flex items-center justify-center text-emerald-400">
-              <ShieldCheck className="w-3 h-3" />
-            </span>
-          )}
-        </div>
+        {/* Contact avatar (random mandala for unsaved contact, initial for saved) */}
+        <ContactAvatar contact={contact} size="md" showBadge={isUnsaved} className="mt-0.5" />
 
         {/* Content */}
         <div className="flex-1 min-w-0">

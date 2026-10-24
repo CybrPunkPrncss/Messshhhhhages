@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { Contact } from '../types';
 import { generatePrivacyPseudonym, getAvatarColor, getContactDisplayName } from '../utils/privacyPseudonyms';
+import { ContactAvatar, getRandomPatternIndex, REFERENCE_IMAGE_PATH } from './ContactAvatar';
 import { X, Search, ShieldCheck, Lock, UserPlus, Send, MessageSquarePlus } from 'lucide-react';
 
 interface NewMessageModalProps {
   existingContacts: Contact[];
   onClose: () => void;
-  onCreateConversation: (contactData: { rawPhoneNumber: string; isSaved: boolean; name?: string }, initialText: string) => void;
+  onCreateConversation: (contactData: { rawPhoneNumber: string; isSaved: boolean; name?: string; avatarPatternIndex?: number }, initialText: string) => void;
 }
 
 export function NewMessageModal({ existingContacts, onClose, onCreateConversation }: NewMessageModalProps) {
@@ -18,9 +19,20 @@ export function NewMessageModal({ existingContacts, onClose, onCreateConversatio
   const cleanedDigits = phoneInput.replace(/\D/g, '');
   const isInputValidNumber = cleanedDigits.length >= 7;
 
-  // Real-time generated privacy alias for this phone number
+  // Real-time generated privacy alias and mandala image for this phone number
   const previewAlias = generatePrivacyPseudonym(cleanedDigits || 'new_seed');
-  const previewColor = getAvatarColor(cleanedDigits || 'new_seed');
+  const previewPatternIndex = getRandomPatternIndex(cleanedDigits || 'new_seed');
+
+  const PATTERN_POSITIONS: Record<number, string> = {
+    0: '0% 0%',
+    1: '33.333% 0%',
+    2: '66.666% 0%',
+    3: '100% 0%',
+    4: '0% 100%',
+    5: '33.333% 100%',
+    6: '66.666% 100%',
+    7: '100% 100%',
+  };
 
   // Filter existing contacts
   const filteredContacts = existingContacts.filter((c) => {
@@ -35,7 +47,8 @@ export function NewMessageModal({ existingContacts, onClose, onCreateConversatio
     onCreateConversation(
       {
         rawPhoneNumber: phoneInput,
-        isSaved: false, // Unsaved sender! Will be shielded with previewAlias
+        isSaved: false, // Unsaved sender! Will be shielded with previewAlias and assigned mandala image
+        avatarPatternIndex: previewPatternIndex,
       },
       initialMessage.trim() || 'Hi! Starting an end-to-end encrypted RCS chat.'
     );
@@ -48,6 +61,7 @@ export function NewMessageModal({ existingContacts, onClose, onCreateConversatio
         rawPhoneNumber: contact.rawPhoneNumber,
         isSaved: contact.isSaved,
         name: contact.isSaved ? contact.name : undefined,
+        avatarPatternIndex: contact.avatarPatternIndex,
       },
       initialMessage.trim() || 'Hi! Connecting via RCS.'
     );
@@ -103,15 +117,28 @@ export function NewMessageModal({ existingContacts, onClose, onCreateConversatio
               </div>
 
               <div className="flex items-center gap-3 p-2 bg-neutral-900 rounded-xl">
+                {/* Mandala contact image preview with black background */}
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-neutral-950 font-bold text-xs"
-                  style={{ backgroundColor: previewColor }}
+                  className="w-10 h-10 rounded-full overflow-hidden bg-black shadow-sm ring-1 ring-neutral-800 shrink-0"
+                  title={`Pattern #${previewPatternIndex + 1}`}
                 >
-                  {previewAlias.slice(0, 2).toUpperCase()}
+                  <div
+                    className="w-full h-full rounded-full"
+                    style={{
+                      backgroundImage: `url('${REFERENCE_IMAGE_PATH}')`,
+                      backgroundSize: '400% 200%',
+                      backgroundPosition: PATTERN_POSITIONS[previewPatternIndex] || '0% 0%',
+                      backgroundRepeat: 'no-repeat',
+                    }}
+                  />
                 </div>
+
                 <div>
-                  <div className="text-xs font-semibold text-neutral-100">
-                    {previewAlias}
+                  <div className="text-xs font-semibold text-neutral-100 flex items-center gap-1.5">
+                    <span>{previewAlias}</span>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-950/80 px-1.5 py-0.2 rounded border border-emerald-800/80">
+                      Shielded
+                    </span>
                   </div>
                   <div className="text-[10px] text-neutral-400">
                     Phone number will be hidden on screen permanently
@@ -157,12 +184,7 @@ export function NewMessageModal({ existingContacts, onClose, onCreateConversatio
                   className="flex items-center justify-between p-2 rounded-xl hover:bg-neutral-800 cursor-pointer transition-colors text-xs"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div
-                      className="w-7 h-7 rounded-full flex items-center justify-center text-neutral-950 font-bold text-[10px]"
-                      style={{ backgroundColor: c.avatarColor }}
-                    >
-                      {name.slice(0, 2).toUpperCase()}
-                    </div>
+                    <ContactAvatar contact={c} size="xs" showBadge={false} />
                     <div>
                       <div className="font-semibold text-neutral-200">{name}</div>
                       <div className="text-[10px] text-neutral-400">

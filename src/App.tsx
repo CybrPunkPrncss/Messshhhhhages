@@ -30,6 +30,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
   const [isDeviceFrame, setIsDeviceFrame] = useState(true);
+  const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
 
   // Modals state
   const [showEncryptionModal, setShowEncryptionModal] = useState(false);
@@ -125,7 +126,7 @@ export default function App() {
       })
     );
 
-    // Transition message status: sent -> delivered -> read
+    // Transition message status: sent -> delivered -> (read only if readReceiptsEnabled)
     setTimeout(() => {
       setConversations((prev) =>
         prev.map((c) => {
@@ -163,15 +164,17 @@ export default function App() {
               iv: replyCipher.iv,
               timestamp: replyNow,
               timeFormatted: formatMessageTime(replyNow),
-              status: 'read' as const,
+              status: readReceiptsEnabled ? ('read' as const) : ('delivered' as const),
               isE2EE: true,
               isRcs: true,
             };
 
+            const targetFinalStatus = readReceiptsEnabled ? ('read' as const) : ('delivered' as const);
+
             return {
               ...c,
               messages: c.messages.map((m) =>
-                m.id === newMsg.id ? { ...m, status: 'read' as const } : m
+                m.id === newMsg.id ? { ...m, status: targetFinalStatus } : m
               ).concat(replyMsg),
               lastMessageSnippet: replyText,
               lastMessageTimestamp: replyNow,
@@ -228,14 +231,18 @@ export default function App() {
     const messageText = RANDOM_UNSAVED_TEXTS[Math.floor(Math.random() * RANDOM_UNSAVED_TEXTS.length)];
     const { ciphertext, iv } = encryptPayload(messageText);
 
+    // Assign a randomly selected contact image pattern (0 to 7) from the reference sheet for the unsaved number
+    const avatarPatternIndex = Math.floor(Math.random() * 8);
+
     const newContact: Contact = {
       id: `contact_unsaved_${now}`,
       rawPhoneNumber, // Stored safely in memory, NEVER shown on screen!
       isSaved: false,
       name: privacyAlias,
       privacyAlias,
-      privacyTheme: 'Mineral · Wildlife',
+      privacyTheme: 'Mineral · Mandala Pattern',
       avatarColor,
+      avatarPatternIndex, // Randomly selected image in replacement of initials
       isRcsEnabled: true,
       encryptionStatus: 'e2ee_active',
       safetyNumber,
@@ -270,7 +277,7 @@ export default function App() {
 
     setConversations((prev) => [newConversation, ...prev]);
 
-    // Show Android heads-up notification with strictly the alias!
+    // Show Android heads-up notification with strictly the alias and contact image!
     setIncomingNotification({
       contact: newContact,
       messageText,
@@ -336,15 +343,18 @@ export default function App() {
     }, 5000);
   };
 
-  // Start chat with a phone number (creates shielded contact)
+  // Start chat with a phone number (creates shielded contact with random mandala pattern)
   const handleCreateConversation = (
-    contactData: { rawPhoneNumber: string; isSaved: boolean; name?: string },
+    contactData: { rawPhoneNumber: string; isSaved: boolean; name?: string; avatarPatternIndex?: number },
     initialText: string
   ) => {
     const now = Date.now();
     const rawNumber = contactData.rawPhoneNumber;
     const privacyAlias = generatePrivacyPseudonym(rawNumber);
     const avatarColor = getAvatarColor(rawNumber);
+    const avatarPatternIndex = typeof contactData.avatarPatternIndex === 'number'
+      ? contactData.avatarPatternIndex
+      : Math.floor(Math.random() * 8);
 
     const contact: Contact = {
       id: `contact_${now}`,
@@ -354,6 +364,7 @@ export default function App() {
       privacyAlias,
       privacyTheme: 'Mineral · Cosmic',
       avatarColor,
+      avatarPatternIndex,
       isRcsEnabled: true,
       encryptionStatus: 'e2ee_active',
       safetyNumber: generateSafetyNumber(rawNumber),
@@ -410,24 +421,44 @@ export default function App() {
     );
   };
 
-  // Regenerate privacy alias
+  // Regenerate privacy alias & cycle to a new contact image pattern
   const handleRerollPseudonym = (contactId: string) => {
     setConversations((prev) =>
       prev.map((c) => {
         if (c.contact.id === contactId) {
           const newAlias = generatePrivacyPseudonym();
+          const newPattern = typeof c.contact.avatarPatternIndex === 'number'
+            ? (c.contact.avatarPatternIndex + 1) % 8
+            : Math.floor(Math.random() * 8);
           return {
             ...c,
             contact: {
               ...c.contact,
               privacyAlias: newAlias,
               name: newAlias,
+              avatarPatternIndex: newPattern,
             },
           };
         }
         return c;
       })
     );
+  };
+
+  // Toggle read receipts setting & update message UI
+  const handleToggleReadReceipts = (enabled: boolean) => {
+    setReadReceiptsEnabled(enabled);
+    if (!enabled) {
+      // Immediately reflect read receipts disabled in the message status UI
+      setConversations((prev) =>
+        prev.map((conv) => ({
+          ...conv,
+          messages: conv.messages.map((m) =>
+            m.senderId === 'user' && m.status === 'read' ? { ...m, status: 'delivered' as const } : m
+          ),
+        }))
+      );
+    }
   };
 
   // Mark contact E2EE as verified
@@ -499,6 +530,7 @@ export default function App() {
               {activeConversation ? (
                 <ChatView
                   conversation={activeConversation}
+                  readReceiptsEnabled={readReceiptsEnabled}
                   onBack={() => setActiveConversationId(null)}
                   onSendMessage={handleSendMessage}
                   onAddReaction={handleAddReaction}
@@ -523,6 +555,7 @@ export default function App() {
                   <ConversationList
                     conversations={filteredConversations}
                     selectedId={activeConversationId}
+                    readReceiptsEnabled={readReceiptsEnabled}
                     onSelectConversation={(id) => {
                       setActiveConversationId(id);
                       setConversations((prev) =>
@@ -554,6 +587,7 @@ export default function App() {
                 <ConversationList
                   conversations={filteredConversations}
                   selectedId={activeConversationId}
+                  readReceiptsEnabled={readReceiptsEnabled}
                   onSelectConversation={(id) => {
                     setActiveConversationId(id);
                     setConversations((prev) =>
@@ -570,6 +604,7 @@ export default function App() {
                 {activeConversation ? (
                   <ChatView
                     conversation={activeConversation}
+                    readReceiptsEnabled={readReceiptsEnabled}
                     onBack={() => setActiveConversationId(null)}
                     onSendMessage={handleSendMessage}
                     onAddReaction={handleAddReaction}
@@ -636,7 +671,11 @@ export default function App() {
 
       {/* Settings Modal */}
       {showSettingsModal && (
-        <SettingsModal onClose={() => setShowSettingsModal(false)} />
+        <SettingsModal
+          onClose={() => setShowSettingsModal(false)}
+          readReceiptsEnabled={readReceiptsEnabled}
+          onToggleReadReceipts={handleToggleReadReceipts}
+        />
       )}
     </div>
   );
